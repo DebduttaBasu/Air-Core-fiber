@@ -1,0 +1,44 @@
+close all
+load('All_mode.mat');
+%figure,imagesc(abs(mode19_Ex)),colorbar,colormap("turbo"),clim([0 1]);
+% Create a new figure
+
+figure('Position', [100, 100, 1200, 800]); % [left, bottom, width, height]
+
+% Specify the number of rows and columns for subplots
+numRows = 2;
+numCols = 3;
+
+% Loop through each mode and plot Ex, Ey, Hx, Hy, Hz in separate subplots
+for modeIndex = 1:6
+    subplot(numRows, numCols, modeIndex);
+    
+    % Get the variable names for Ex, Ey, Hx, Hy, Hz
+    variableNames = {'Ex', 'Ey', 'Ez', 'Hx', 'Hy', 'Hz'};
+    
+    % Get the current variable name
+    currentVarName = variableNames{modeIndex};
+    
+    % Plot the corresponding variable for the current mode
+    imagesc(abs(eval(['mode17_' currentVarName])));
+    
+    % Set the font size for colorbar
+    colorbar;
+    colormap("turbo");
+    
+    % Set clim based on the variable
+    if startsWith(currentVarName, 'H')  % If the variable is HX, HY, HZ
+        clim([0 1e-2]);  % Adjust the clim for HX, HY, HZ
+    else
+        clim([0 1]);  % Default clim for Ex, Ey
+    end
+    
+    title([currentVarName],'FontWeight', 'bold');
+    % Set the font size for x and y-axis ticks and labels
+    set(gca, 'FontSize', 14, 'FontWeight', 'bold');
+end
+
+% Adjust the layout of subplots
+sgtitle('HE_{7,1} mode abs. field profile','FontWeight', 'bold');  % Add a title for the entire figure
+% Save the figure as a PNG file
+% saveas(gcf, 'HE71.png');

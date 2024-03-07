@@ -1,0 +1,85 @@
+%% code for overlap integral Vs. Focal Length
+%   Author: Debdutta Basu from IIT Madras
+%   Date: 16.01.2024
+clc;clear all;close all;
+%% Conversion to cylindrical cordinates
+xpixel=600; % Defining the number of pixels along x
+ypixel=600; % Defining the number of pixels along y
+cell=0.05e-6; % Cell size of each pixel
+x=-(xpixel/2):1:(xpixel/2); x=x*cell;
+y=-(ypixel/2):1:(ypixel/2); y=y*cell;
+[X,Y]=meshgrid(x,y);
+rho = sqrt(Y.^2+X.^2);    % [phi,rho]=cart2pol(X,Y) is an equivalent function
+phi =atan2(-Y,X);        % -Y is used to care of the reverse number mapping
+phi(phi<0)=phi(phi<0)+2*pi; % This command is for mapping the phase profile from 0 to 2pi
+%E_field_even_y=0.028494298563127.*sin(phi);
+load('All_mode.mat');
+%% Loading HE even and odd modes
+HE_even_x= mode19_Ex;            %load("Mode_4_Ex.csv");
+HE_even_y= mode19_Ey;            %load("Mode_4_Ey.csv");
+HE_odd_x=  mode20_Ex;            %load("Mode_5_Ex.csv");
+HE_odd_y=  mode20_Ey;            %load("Mode_5_Ey.csv");
+oam_x=HE_even_x+1i.*HE_odd_x;
+%oam_y=1*(-1i*HE_even_y+HE_odd_y);
+oam_y=-1.*(HE_even_y+1i.*HE_odd_y);
+norm_x= sqrt(sum(sum(abs(oam_x).^2)));
+norm_oam_x = oam_x/norm_x;
+norm_y= sqrt(sum(sum(abs(oam_y).^2)));
+norm_oam_y = oam_y/norm_y;
+oam=(1/sqrt(2))*(oam_x+oam_y);
+norm_1= sqrt(sum(sum(abs(oam).^2)));
+norm_oam = oam/norm_1;
+%oam = oam/max(max(oam));
+figure;imagesc(abs(norm_oam)/max(max(abs(norm_oam))));colormap('turbo'),colorbar;
+xlabel('Pixel');
+ylabel('Pixel');
+gca.FontSize = 14; % Set the font size
+figure;imagesc(abs(oam_x));
+% figure;imagesc(angle(oam_x));
+figure;imagesc(abs(oam_y));
+% figure;imagesc(angle(oam_y));
+oam_intensity= abs(oam.^2);%sqrt(abs(oam_x).^2+abs(oam_y).^2);
+% figure;imagesc(abs(oam));
+% figure;imagesc(oam_intensity)
+figure;
+plot(x*1e6,oam_intensity(:,300),'r','LineWidth',2);
+
+%% Defining the modes : LG modes
+L=1550*(10^-9); % Wavelength
+f_values = linspace(4e-3, 8e-3, 100); % Variation of focal length from 4 to 8
+overlap_integral_values = zeros(size(f_values));
+spot_size = zeros(size(f_values));
+for idx = 1:length(f_values)
+    f = f_values(idx); % Current focal length
+    inp_rad=0.00346/2; % aperture of lens
+    l=5;
+    w=(sqrt(l+1)*L*f)/(pi*inp_rad);
+    spot_size(idx) = w;
+      % input beam which is a plane wave; we are converting it into beam with waist 0.8mm 
+    p=0; %radial order =0,Normalisation constant M is substituted l=1,p=0 and put in equation
+    cal_field_re=(sqrt(2/pi))*(1/w).*((sqrt(2)*rho/w).^abs(l)).*exp(-(rho/w).^2).*exp(1i*(l)*phi);
+    norm_cal_field_re= cal_field_re/sqrt(sum(sum(abs(cal_field_re).^2)));
+
+
+%% Overlap Integral
+    E1 =norm_oam;
+    E2 =norm_cal_field_re;
+    % Define the integrand function as the dot product of E1 and E2
+    integrand = abs((sum(sum(E1.*conj(E2))))^2);
+    norm_factor = 1;%sum(sum((E1)^2))*sum(sum((E2)^2));
+    OI= (integrand/norm_factor);
+    overlap_integral_values(idx) = OI;
+end
+
+
+
+%% Plotting overlap integral values with focal length variation
+figure;
+plot(f_values * 1e3, overlap_integral_values*100, 'LineWidth', 2);
+xlabel('Focal Length (mm)');
+ylabel('Overlap Integral Efficiency (%)');
+%title('Overlap Integral vs. Focal Length');
+ax = gca;
+ax.LineWidth = 2; % Set the line width
+ax.FontSize = 20; % Set the font size
+grid on;
